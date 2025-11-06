@@ -1,0 +1,162 @@
+<!-- =====================================================
+     DASHBOARD - ELEGANT MODERN INTERFACE
+     ===================================================== -->
+<div class="dashboard">
+  <div class="dashboard-container">
+    <!-- Header Elegante -->
+    <header class="dashboard-header">
+      <h1 class="dashboard-title">Finance Tracker</h1>
+      <p class="dashboard-subtitle">Gestiona tus finanzas con elegancia y simplicidad</p>
+    </header>
+
+    <!-- Estadísticas Principales -->
+    <section class="stats-container">
+      <!-- Ingresos -->
+      <div class="stat-card income">
+        <div class="stat-content">
+          <div class="stat-icon-wrapper">
+            <span>💰</span>
+          </div>
+          <div class="stat-info">
+            <span class="stat-label">Ingresos Totales</span>
+            <h2 class="stat-amount">
+              {{ transactionService.totalIncome() | currency : 'USD' : 'symbol' : '1.0-0' }}
+            </h2>
+            <div class="stat-trend">
+              <span>📈</span>
+              <span>Dinero que entra</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gastos -->
+      <div class="stat-card expense">
+        <div class="stat-content">
+          <div class="stat-icon-wrapper">
+            <span>💸</span>
+          </div>
+          <div class="stat-info">
+            <span class="stat-label">Gastos Totales</span>
+            <h2 class="stat-amount">
+              {{ transactionService.totalExpenses() | currency : 'USD' : 'symbol' : '1.0-0' }}
+            </h2>
+            <div class="stat-trend">
+              <span>📉</span>
+              <span>Dinero que sale</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Balance -->
+      <div
+        class="stat-card balance"
+        [class.positive]="transactionService.balance() >= 0"
+        [class.negative]="transactionService.balance() < 0"
+        [class.neutral]="transactionService.balance() === 0"
+      >
+        <div class="stat-content">
+          <div class="stat-icon-wrapper">
+            <span>⚖️</span>
+          </div>
+          <div class="stat-info">
+            <span class="stat-label">Balance Actual</span>
+            <h2 class="stat-amount">
+              {{ transactionService.balance() | currency : 'USD' : 'symbol' : '1.0-0' }}
+            </h2>
+            <div class="stat-trend">
+              <span>{{ getBalanceIcon() }}</span>
+              <span>{{ getBalanceText() }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Gráfico de Categorías -->
+    <section class="content-section">
+      <h3>📊 Análisis por Categorías</h3>
+      <app-category-chart></app-category-chart>
+    </section>
+
+    <!-- Transacciones Recientes -->
+    <section class="content-section">
+      <div
+        style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: var(--space-6);
+        "
+      >
+        <h3>🕒 Actividad Reciente</h3>
+        <a routerLink="/transactions" class="btn btn-secondary btn-sm">
+          Ver todas las transacciones →
+        </a>
+      </div>
+
+      @if (recentTransactions().length > 0) {
+      <div class="recent-transactions-grid">
+        @for (transaction of recentTransactions(); track transaction.id) {
+        <div class="transaction-preview-card" [class]="transaction.type">
+          <div class="transaction-preview-content">
+            <div class="transaction-preview-header">
+              <span class="transaction-preview-category">{{ transaction.category }}</span>
+              <span class="transaction-preview-date">{{ transaction.date | date : 'dd/MM' }}</span>
+            </div>
+            <h4 class="transaction-preview-description">{{ transaction.description }}</h4>
+            <div class="transaction-preview-amount" [class]="transaction.type">
+              {{ transaction.amount | currency : 'USD' : 'symbol' : '1.0-0' }}
+            </div>
+          </div>
+        </div>
+        }
+      </div>
+      } @else {
+      <div class="empty-state">
+        <div class="empty-state-icon">📝</div>
+        <h4>¡Comienza tu viaje financiero!</h4>
+        <p>
+          No tienes transacciones aún. Agrega tu primera transacción para comenzar a rastrear tus
+          finanzas.
+        </p>
+        <a routerLink="/add-transaction" class="btn btn-primary">
+          ➕ Agregar Primera Transacción
+        </a>
+      </div>
+      }
+    </section>
+
+    <!-- Resumen Rápido -->
+    <section class="content-section" style="margin-top: var(--space-8)">
+      <h3>📈 Resumen del Mes</h3>
+      <div class="summary-grid">
+        <div class="summary-item">
+          <span class="summary-icon">📊</span>
+          <div class="summary-content">
+            <span class="summary-label">Total de Transacciones</span>
+            <span class="summary-value">{{ transactionService.transactions().length }}</span>
+          </div>
+        </div>
+        <div class="summary-item">
+          <span class="summary-icon">📅</span>
+          <div class="summary-content">
+            <span class="summary-label">Mes Actual</span>
+            <span class="summary-value">{{ getCurrentMonth() }}</span>
+          </div>
+        </div>
+        <div class="summary-item">
+          <span class="summary-icon">🎯</span>
+          <div class="summary-content">
+            <span class="summary-label">Estado Financiero</span>
+            <span class="summary-value" [class]="getBalanceStatus()">{{ getBalanceText() }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- Modal de Formulario (si es necesario) -->
+<app-transaction-form></app-transaction-form>

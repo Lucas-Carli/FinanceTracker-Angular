@@ -1,0 +1,94 @@
+<!-- src/app/components/transaction-list/transaction-list.component.html -->
+<div class="transaction-list">
+  <div class="header">
+    <h2>📋 Historial de Transacciones</h2>
+    <p class="count">
+      Mostrando {{ filteredTransactions().length }} de
+      {{ transactionService.transactions().length }} transacciones
+    </p>
+  </div>
+
+  <!-- Filtros -->
+  <div class="filters">
+    <!-- Búsqueda -->
+    <div class="search-box">
+      <input
+        type="text"
+        placeholder="🔍 Buscar por descripción o categoría..."
+        (input)="updateSearch($event)"
+        [value]="searchTerm()"
+      />
+    </div>
+
+    <!-- Filtro por tipo -->
+    <div class="filter-buttons">
+      <button [class.active]="filterType() === 'all'" (click)="setFilterType('all')">Todas</button>
+      <button
+        [class.active]="filterType() === 'income'"
+        [class.income]="filterType() === 'income'"
+        (click)="setFilterType('income')"
+      >
+        💰 Ingresos
+      </button>
+      <button
+        [class.active]="filterType() === 'expense'"
+        [class.expense]="filterType() === 'expense'"
+        (click)="setFilterType('expense')"
+      >
+        💸 Gastos
+      </button>
+    </div>
+
+    <!-- Filtro por categoría -->
+    <div class="category-filter">
+      <select (change)="setFilterCategory($event)" [value]="filterCategory()">
+        <option *ngFor="let cat of categories()" [value]="cat">
+          {{ cat === 'all' ? 'Todas las categorías' : cat }}
+        </option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Lista de transacciones -->
+  <div class="transactions">
+    <!-- Mensaje si no hay transacciones -->
+    <div *ngIf="filteredTransactions().length === 0" class="empty-state">
+      <p>😕 No se encontraron transacciones</p>
+      <small>Intenta cambiar los filtros o agregar nuevas transacciones</small>
+    </div>
+
+    <!-- Cards de transacciones -->
+    <div
+      *ngFor="let transaction of filteredTransactions()"
+      class="transaction-card"
+      [class]="getTypeClass(transaction.type)"
+    >
+      <div class="transaction-icon">
+        {{ getTypeEmoji(transaction.type) }}
+      </div>
+
+      <div class="transaction-info">
+        <h4>{{ transaction.description }}</h4>
+        <div class="transaction-meta">
+          <span class="category">📂 {{ transaction.category }}</span>
+          <span class="date">📅 {{ transaction.date | date : 'dd/MM/yyyy' }}</span>
+        </div>
+      </div>
+
+      <div class="transaction-amount">
+        <span class="amount">
+          {{ transaction.type === 'income' ? '+' : '-' }}
+          {{ transaction.amount | currency : 'USD' : 'symbol' : '1.0-0' }}
+        </span>
+      </div>
+
+      <button
+        class="delete-btn"
+        (click)="deleteTransaction(transaction.id.toString())"
+        title="Eliminar transacción"
+      >
+        🗑️
+      </button>
+    </div>
+  </div>
+</div>

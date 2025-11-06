@@ -1,0 +1,60 @@
+<!-- =====================================================
+     CATEGORY CHART - ELEGANT MODERN INTERFACE
+     ===================================================== -->
+<div class="category-chart-container">
+  <!-- Estado Vacío Elegante -->
+  @if (!hasData()) {
+  <div class="empty-state">
+    <div class="empty-state-icon">📊</div>
+    <h3>Sin Gastos Registrados</h3>
+    <p>
+      Aún no tienes gastos para mostrar en el gráfico. Agrega algunas transacciones de tipo "Gasto"
+      para ver la distribución visual de tus gastos por categoría.
+    </p>
+    <a routerLink="/add-transaction" class="btn btn-primary"> ➕ Agregar Primer Gasto </a>
+  </div>
+  }
+
+  <!-- Contenido del Gráfico -->
+  @if (hasData()) {
+  <div class="chart-content">
+    <!-- Gráfico de Dona -->
+    <div class="chart-wrapper">
+      <canvas #chartCanvas class="chart-canvas"></canvas>
+    </div>
+
+    <!-- Estadísticas Detalladas -->
+    <div class="chart-stats">
+      <div class="stats-header">
+        <span class="stats-icon">📋</span>
+        <h4>Desglose por Categoría</h4>
+      </div>
+
+      <div class="stats-list">
+        @for (stat of getCategoryStats(); track stat.category) {
+        <div class="stat-row" [style.border-left-color]="stat.color">
+          <div class="stat-category">
+            <div class="category-color" [style.background-color]="stat.color"></div>
+            <div class="category-info">
+              <div class="category-name">{{ stat.category }}</div>
+              <div class="category-percentage">{{ stat.percentage.toFixed(1) }}% del total</div>
+            </div>
+          </div>
+          <div class="category-amount">
+            {{ stat.amount | currency : 'USD' : 'symbol' : '1.0-0' }}
+          </div>
+        </div>
+        }
+      </div>
+
+      <!-- Total de Gastos -->
+      <div class="total-expenses">
+        <div class="total-label">Total de Gastos</div>
+        <h3 class="total-amount">
+          {{ transactionServicePublic.totalExpenses() | currency : 'USD' : 'symbol' : '1.0-0' }}
+        </h3>
+      </div>
+    </div>
+  </div>
+  }
+</div>

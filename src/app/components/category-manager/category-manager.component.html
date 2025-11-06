@@ -1,0 +1,101 @@
+<div class="category-manager">
+  <div class="category-header-row">
+    <h2>Categorías</h2>
+    <button class="btn btn-dark" (click)="openAddForm('income')">Agregar</button>
+  </div>
+  <div class="category-filters">
+    <div class="tabs">
+      <button [class.active]="filterTab() === 'all'" (click)="setTab('all')">Todas</button>
+      <button [class.active]="filterTab() === 'income'" (click)="setTab('income')">Ingresos</button>
+      <button [class.active]="filterTab() === 'expense'" (click)="setTab('expense')">
+        Egresos
+      </button>
+    </div>
+    <input
+      class="search-input"
+      type="text"
+      placeholder="Buscar por nombre..."
+      [value]="searchTerm()"
+      (input)="setSearch($event.target.value)"
+    />
+  </div>
+  <div class="category-list">
+    <div *ngFor="let cat of filteredCategories()" class="category-card">
+      <span class="icon" [style.background]="cat.color">{{ cat.icon }}</span>
+      <div class="info">
+        <div class="name">
+          {{ cat.name }}
+          <span class="badge" [ngClass]="cat.type">{{
+            cat.type === 'income' ? 'Ingreso' : 'Egreso'
+          }}</span>
+        </div>
+        <div class="desc">{{ cat.description }}</div>
+      </div>
+      <div class="actions">
+        <button class="btn-dark edit-btn" (click)="openEditForm(cat)">Editar</button>
+        <button class="delete-btn" (click)="deleteCategory(cat)">Eliminar</button>
+      </div>
+    </div>
+    <div *ngIf="filteredCategories().length === 0" class="empty-msg">
+      No hay categorías para mostrar.
+    </div>
+  </div>
+
+  <button class="btn btn-danger" (click)="resetDefaults()">Restaurar categorías por defecto</button>
+
+  <div class="modal" *ngIf="showForm()">
+    <div class="modal-content">
+      <h3 *ngIf="formType === 'add'">Agregar categoría</h3>
+      <h3 *ngIf="formType === 'edit'">Editar categoría</h3>
+      <form>
+        <label>Nombre</label>
+        <input
+          class="form-input"
+          [value]="formData().name || ''"
+          (input)="updateFormField('name', $event.target.value)"
+          name="name"
+          required
+        />
+        <label>Tipo</label>
+        <select
+          class="form-select"
+          #typeSelect
+          [value]="formData().type || ''"
+          (change)="updateFormField('type', typeSelect.value)"
+          name="type"
+        >
+          <option value="income">Ingreso</option>
+          <option value="expense">Egreso</option>
+        </select>
+        <label>Descripción</label>
+        <input
+          class="form-input"
+          [value]="formData().description || ''"
+          (input)="updateFormField('description', $event.target.value)"
+          name="description"
+        />
+        <label>Color</label>
+        <input
+          class="form-input"
+          [value]="formData().color || ''"
+          (input)="updateFormField('color', $event.target.value)"
+          name="color"
+          type="color"
+        />
+        <label>Icono</label>
+        <input
+          class="form-input"
+          [value]="formData().icon || ''"
+          (input)="updateFormField('icon', $event.target.value)"
+          name="icon"
+          maxlength="2"
+        />
+        <div class="form-error" *ngIf="formError()">{{ formError() }}</div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-primary" (click)="saveCategory()">Guardar</button>
+          <button type="button" class="btn btn-secondary" (click)="closeForm()">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

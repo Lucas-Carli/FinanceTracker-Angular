@@ -1,0 +1,471 @@
+<!-- Budget Manager Component Template -->
+<div class="budget-manager">
+  <!-- Navigation Tabs -->
+  <div class="tab-navigation">
+    <button
+      [class.active]="selectedTab() === 'budgets'"
+      (click)="selectTab('budgets')"
+      class="tab-button"
+    >
+      <i class="icon">📊</i>
+      Presupuestos
+    </button>
+    <button
+      [class.active]="selectedTab() === 'templates'"
+      (click)="selectTab('templates')"
+      class="tab-button"
+    >
+      <i class="icon">📋</i>
+      Plantillas
+    </button>
+    <button
+      [class.active]="selectedTab() === 'reports'"
+      (click)="selectTab('reports')"
+      class="tab-button"
+    >
+      <i class="icon">📈</i>
+      Reportes
+    </button>
+  </div>
+
+  <!-- Budget Alerts -->
+  @if (alerts().length > 0) {
+  <div class="alerts-section">
+    <h3>🚨 Alertas Activas</h3>
+    <div class="alerts-grid">
+      @for (alert of alerts(); track alert.id) {
+      <div class="alert-card" [attr.data-type]="alert.type">
+        <div class="alert-header">
+          <span class="alert-title">{{ alert.message }}</span>
+          <button (click)="clearAlert(alert.id)" class="clear-btn">×</button>
+        </div>
+        <div class="alert-details">
+          <small>Categoría ID: {{ alert.categoryId }} - {{ alert.severity }}</small>
+        </div>
+      </div>
+      }
+    </div>
+  </div>
+  }
+
+  <!-- Content based on selected tab -->
+  <div class="tab-content">
+    <!-- BUDGETS TAB -->
+    @if (selectedTab() === 'budgets') {
+    <div class="budgets-section">
+      <div class="section-header">
+        <h2>Gestión de Presupuestos</h2>
+        <button (click)="startCreatingBudget()" class="primary-btn">
+          <i class="icon">➕</i>
+          Nuevo Presupuesto
+        </button>
+      </div>
+
+      @if (isCreating()) {
+      <!-- Budget Creation Form -->
+      <div class="budget-form-card">
+        <form [formGroup]="budgetForm" (ngSubmit)="saveBudget()">
+          <div class="form-header">
+            <h3>Crear Nuevo Presupuesto</h3>
+            <button type="button" (click)="cancelBudgetCreation()" class="close-btn">×</button>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="budgetName">Nombre del Presupuesto</label>
+              <input
+                id="budgetName"
+                type="text"
+                formControlName="name"
+                placeholder="Ej: Presupuesto Familiar Noviembre"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="budgetMonth">Mes</label>
+              <input id="budgetMonth" type="month" formControlName="month" />
+            </div>
+          </div>
+
+          <!-- Categories Section -->
+          <div class="categories-section">
+            <div class="categories-header">
+              <h4>Categorías del Presupuesto</h4>
+              <button type="button" (click)="addBudgetCategory()" class="secondary-btn">
+                ➕ Agregar Categoría
+              </button>
+            </div>
+
+            <div formArrayName="categories" class="categories-list">
+              @for (categoryControl of budgetCategories.controls; track $index) {
+              <div [formGroupName]="$index" class="category-form">
+                <div class="category-grid">
+                  <div class="form-group">
+                    <label>Categoría</label>
+                    <select formControlName="name">
+                      <option value="">Seleccionar categoría</option>
+                      @for (cat of availableExpenseCategories(); track cat.id) {
+                      <option [ngValue]="cat.name">{{ cat.icon }} {{ cat.name }}</option>
+                      }
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label>Presupuesto</label>
+                    <input type="number" formControlName="budgetAmount" placeholder="0" min="0" />
+                  </div>
+
+                  <div class="form-group">
+                    <label>Alerta (%)</label>
+                    <input
+                      type="number"
+                      formControlName="alertThreshold"
+                      placeholder="80"
+                      min="0"
+                      max="100"
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <button type="button" (click)="removeBudgetCategory($index)" class="danger-btn">
+                      🗑️
+                    </button>
+                  </div>
+                </div>
+              </div>
+              }
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" (click)="cancelBudgetCreation()" class="secondary-btn">
+              Cancelar
+            </button>
+            <button type="submit" [disabled]="!budgetForm.valid" class="primary-btn">
+              Crear Presupuesto
+            </button>
+          </div>
+        </form>
+      </div>
+      }
+
+      <!-- Budget List -->
+      <div class="budgets-grid">
+        @for (budget of budgets(); track budget.id) {
+        <div class="budget-card" [class.selected]="selectedBudget()?.id === budget.id">
+          <div class="budget-header">
+            <h3>{{ budget.name }}</h3>
+            <div class="budget-meta">
+              <span class="budget-period">{{ formatMonth(budget.month, budget.year) }}</span>
+              @if (budget.isActive) {
+              <span class="active-badge">Activo</span>
+              }
+            </div>
+          </div>
+
+          <div class="budget-summary">
+            <div class="summary-item">
+              <span class="label">Presupuestado:</span>
+              <span class="value">{{ formatCurrency(budget.totals.budgetedExpenses) }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="label">Gastado:</span>
+              <span class="value">{{ formatCurrency(budget.totals.actualExpenses) }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="label">Restante:</span>
+              <span
+                class="value"
+                [class.negative]="budget.totals.budgetedExpenses - budget.totals.actualExpenses < 0"
+              >
+                {{ formatCurrency(budget.totals.budgetedExpenses - budget.totals.actualExpenses) }}
+              </span>
+            </div>
+          </div>
+
+          <div class="budget-progress">
+            @for (category of budget.categories; track category.id) {
+            <div class="category-progress">
+              <div class="category-header">
+                <span class="category-name">{{ category.name }}</span>
+                <span class="category-amount">
+                  {{ formatCurrency(category.spentAmount) }} /
+                  {{ formatCurrency(category.budgetedAmount) }}
+                </span>
+              </div>
+              <div class="progress-bar">
+                <div
+                  class="progress-fill"
+                  [style.width.%]="
+                    getProgressPercentage(category.spentAmount, category.budgetedAmount)
+                  "
+                  [style.background-color]="
+                    getProgressColor(
+                      getProgressPercentage(category.spentAmount, category.budgetedAmount)
+                    )
+                  "
+                ></div>
+              </div>
+            </div>
+            }
+          </div>
+
+          <div class="budget-actions">
+            <button (click)="selectBudget(budget)" class="secondary-btn">Ver Detalles</button>
+            <button (click)="deleteBudget(budget.id)" class="danger-btn">Eliminar</button>
+          </div>
+        </div>
+        } @if (budgets().length === 0 && !isCreating()) {
+        <div class="empty-state">
+          <div class="empty-icon">📊</div>
+          <h3>No hay presupuestos</h3>
+          <p>Crea tu primer presupuesto para comenzar a gestionar tus finanzas</p>
+          <button (click)="startCreatingBudget()" class="primary-btn">Crear Presupuesto</button>
+        </div>
+        }
+      </div>
+    </div>
+    }
+
+    <!-- TEMPLATES TAB -->
+    @if (selectedTab() === 'templates') {
+    <div class="templates-section">
+      <div class="section-header">
+        <h2>Plantillas de Presupuesto</h2>
+        <button (click)="startCreatingTemplate()" class="primary-btn">
+          <i class="icon">➕</i>
+          Nueva Plantilla
+        </button>
+      </div>
+
+      @if (isEditingTemplate()) {
+      <!-- Template Creation Form -->
+      <div class="template-form-card">
+        <form [formGroup]="templateForm" (ngSubmit)="saveTemplate()">
+          <div class="form-header">
+            <h3>Crear Nueva Plantilla</h3>
+            <button type="button" (click)="cancelTemplateCreation()" class="close-btn">×</button>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="templateName">Nombre de la Plantilla</label>
+              <input
+                id="templateName"
+                type="text"
+                formControlName="name"
+                placeholder="Ej: Presupuesto Familiar Básico"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="templateDescription">Descripción</label>
+              <textarea
+                id="templateDescription"
+                formControlName="description"
+                placeholder="Describe esta plantilla..."
+              >
+              </textarea>
+            </div>
+          </div>
+
+          <!-- Template Categories -->
+          <div class="categories-section">
+            <div class="categories-header">
+              <h4>Categorías de la Plantilla</h4>
+              <button type="button" (click)="addTemplateCategory()" class="secondary-btn">
+                ➕ Agregar Categoría
+              </button>
+            </div>
+
+            <div formArrayName="categories" class="categories-list">
+              @for (categoryControl of templateCategories.controls; track $index) {
+              <div [formGroupName]="$index" class="category-form">
+                <div class="category-grid">
+                  <div class="form-group">
+                    <label>Categoría</label>
+                    <select formControlName="name">
+                      <option value="">Seleccionar categoría</option>
+                      @for (cat of availableExpenseCategories(); track cat.id) {
+                      <option [ngValue]="cat.name">{{ cat.icon }} {{ cat.name }}</option>
+                      }
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label>Monto Sugerido</label>
+                    <input type="number" formControlName="budgetAmount" placeholder="0" min="0" />
+                  </div>
+
+                  <div class="form-group">
+                    <label>Alerta (%)</label>
+                    <input
+                      type="number"
+                      formControlName="alertThreshold"
+                      placeholder="80"
+                      min="0"
+                      max="100"
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <button
+                      type="button"
+                      (click)="removeTemplateCategory($index)"
+                      class="danger-btn"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                </div>
+              </div>
+              }
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" (click)="cancelTemplateCreation()" class="secondary-btn">
+              Cancelar
+            </button>
+            <button type="submit" [disabled]="!templateForm.valid" class="primary-btn">
+              Crear Plantilla
+            </button>
+          </div>
+        </form>
+      </div>
+      }
+
+      <!-- Templates List -->
+      <div class="templates-grid">
+        @for (template of templates(); track template.id) {
+        <div class="template-card">
+          <div class="template-header">
+            <h3>{{ template.name }}</h3>
+            @if (template.isDefault) {
+            <span class="default-badge">Por defecto</span>
+            }
+          </div>
+
+          @if (template.description) {
+          <p class="template-description">{{ template.description }}</p>
+          }
+
+          <div class="template-categories">
+            <h4>Categorías incluidas:</h4>
+            <ul class="categories-list">
+              @for (category of template.categories; track category.id) {
+              <li class="category-item">
+                <span class="category-name">{{ category.name }}</span>
+                <span class="category-amount">{{ formatCurrency(category.defaultAmount) }}</span>
+              </li>
+              }
+            </ul>
+          </div>
+
+          <div class="template-actions">
+            <button (click)="createFromTemplate(template)" class="primary-btn">
+              Usar Plantilla
+            </button>
+            @if (!template.isDefault) {
+            <button (click)="deleteTemplate(template.id)" class="danger-btn">Eliminar</button>
+            }
+          </div>
+        </div>
+        } @if (templates().length === 0 && !isEditingTemplate()) {
+        <div class="empty-state">
+          <div class="empty-icon">📋</div>
+          <h3>No hay plantillas</h3>
+          <p>Crea plantillas para agilizar la creación de presupuestos futuros</p>
+          <button (click)="startCreatingTemplate()" class="primary-btn">Crear Plantilla</button>
+        </div>
+        }
+      </div>
+    </div>
+    }
+
+    <!-- REPORTS TAB -->
+    @if (selectedTab() === 'reports') {
+    <div class="reports-section">
+      <div class="section-header">
+        <h2>Análisis y Reportes</h2>
+      </div>
+
+      @if (budgetPerformance(); as performance) {
+      <div class="performance-card">
+        <h3>Rendimiento del Mes Actual</h3>
+        <div class="performance-grid">
+          <div class="metric-card">
+            <div class="metric-label">Eficiencia General</div>
+            <div
+              class="metric-value"
+              [style.color]="
+                performance.performance.overallScore > 80
+                  ? '#10b981'
+                  : performance.performance.overallScore > 60
+                  ? '#f59e0b'
+                  : '#ef4444'
+              "
+            >
+              {{ performance.performance.overallScore.toFixed(1) }}%
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-label">Categorías Sobre Presupuesto</div>
+            <div
+              class="metric-value"
+              [style.color]="
+                performance.performance.categoriesOverBudget === 0 ? '#10b981' : '#ef4444'
+              "
+            >
+              {{ performance.performance.categoriesOverBudget }}
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-label">Tasa de Ahorro</div>
+            <div
+              class="metric-value"
+              [style.color]="performance.performance.savingsRate > 0 ? '#10b981' : '#ef4444'"
+            >
+              {{ performance.performance.savingsRate.toFixed(1) }}%
+              <span class="metric-suffix">ahorro</span>
+            </div>
+          </div>
+        </div>
+
+        @if (performance.performance.categoriesOverBudget > 0) {
+        <div class="risk-categories">
+          <h4>⚠️ Categorías que Requieren Atención</h4>
+          <div class="risk-list">
+            <div class="risk-item">
+              <span class="risk-category">{{ performance.insights.worstCategory }}</span>
+              <span class="risk-status"
+                >{{ performance.performance.categoriesOverBudget }} categorías sobre
+                presupuesto</span
+              >
+            </div>
+          </div>
+        </div>
+        } @if (performance.insights.recommendations.length > 0) {
+        <div class="suggestions">
+          <h4>💡 Sugerencias de Optimización</h4>
+          <ul class="suggestions-list">
+            @for (suggestion of performance.insights.recommendations; track suggestion) {
+            <li class="suggestion-item">{{ suggestion }}</li>
+            }
+          </ul>
+        </div>
+        }
+      </div>
+      } @else {
+      <div class="empty-state">
+        <div class="empty-icon">📈</div>
+        <h3>No hay datos para análisis</h3>
+        <p>Crea un presupuesto para el mes actual para ver reportes de rendimiento</p>
+      </div>
+      }
+    </div>
+    }
+  </div>
+</div>
